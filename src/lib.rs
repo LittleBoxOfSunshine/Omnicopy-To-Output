@@ -65,19 +65,6 @@ pub fn copy_to_output(path: &str) -> Result<()> {
 }
 
 pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()> {
-    let mut cargo_cache_command = format!("cargo:rerun-if-changed={}", path).to_owned();
-
-    if std::fs::metadata(path).expect("Could not pull metadata for path").is_dir() {
-        cargo_cache_command.push_str("/*");
-    }
-
-    // Re-runs script if any files changed
-    println!("{}", cargo_cache_command);
-    copy_to_output_no_cargo(path, build_type)
-}
-
-/// Advanced usage, leaves cargo commands up to you.
-pub fn copy_to_output_no_cargo(path: &str, build_type: &str) -> Result<()> {
     let mut options = CopyOptions::new();
     let mut out_path = get_project_root()?;
     out_path.push("target");
@@ -112,10 +99,3 @@ fn path_to_str(path: &Path) -> &str {
 pub fn copy_to_output_by_path_for_build_type(path: &Path, build_type: &str) -> Result<()> {
     copy_to_output_for_build_type(path_to_str(path), build_type)
 }
-
-/// Advanced usage, leaves cargo commands up to you.
-pub fn copy_to_output_by_path_no_cargo(path: &Path, build_type: &str) -> Result<()> {
-    copy_to_output_no_cargo(path_to_str(path), build_type)
-}
-
-
