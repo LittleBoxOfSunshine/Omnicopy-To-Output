@@ -1,4 +1,7 @@
-use crate::common::{build_environment, build_environment_with_target, custom_test_target, fake_crate_in_tempdir, fake_workspace_in_tempdir, validate};
+use crate::common::{
+    build_environment, build_environment_with_target, custom_test_target, fake_crate_in_tempdir,
+    fake_workspace_in_tempdir, validate,
+};
 
 mod common;
 

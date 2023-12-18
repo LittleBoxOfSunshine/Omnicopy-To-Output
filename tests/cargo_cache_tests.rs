@@ -1,4 +1,3 @@
-
 // Verify cache clears occur by:
 //  1. Clone to temp dir and build
 //  2. Edit a resource file

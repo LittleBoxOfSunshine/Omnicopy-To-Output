@@ -61,7 +61,10 @@ use std::env;
 use std::path::Path;
 
 pub fn copy_to_output(path: &str) -> Result<()> {
-    copy_to_output_for_build_type(path, &env::var("PROFILE").expect("Could not load env:PROFILE"))
+    copy_to_output_for_build_type(
+        path,
+        &env::var("PROFILE").expect("Could not load env:PROFILE"),
+    )
 }
 
 pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()> {
@@ -70,7 +73,12 @@ pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()>
 
     // TODO: This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
     let triple = build_target::target_triple().unwrap();
-    if env::var_os("OUT_DIR").unwrap().to_str().unwrap().contains(&triple) {
+    if env::var_os("OUT_DIR")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .contains(&triple)
+    {
         out_path.push(triple)
     }
 

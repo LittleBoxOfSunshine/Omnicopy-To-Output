@@ -1,12 +1,12 @@
-use std::fs;
-use std::path::{Path, PathBuf};
 use fs_extra::copy_items;
 use fs_extra::dir::CopyOptions;
+use std::fs;
+use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
 pub struct TestEnvironment {
     _handle: TempDir,
-    pub path: PathBuf
+    pub path: PathBuf,
 }
 
 // Creates a copy of the fake crate in a temp dir and returns handle
@@ -33,26 +33,35 @@ pub fn fake_workspace_in_tempdir() -> TestEnvironment {
 
     let path = dir.path().join("tests").join("fake_workspace");
 
-    TestEnvironment {
-        _handle: dir,
-        path
-    }
+    TestEnvironment { _handle: dir, path }
 }
 
 pub fn build_environment(environment: &TestEnvironment) {
     std::process::Command::new("cargo")
-        .current_dir(environment.path.to_str().expect("Couldn't to_string environment path"))
+        .current_dir(
+            environment
+                .path
+                .to_str()
+                .expect("Couldn't to_string environment path"),
+        )
         .arg("build")
-        .output().expect("failed to execute process");
+        .output()
+        .expect("failed to execute process");
 }
 
 pub fn build_environment_with_target(environment: &TestEnvironment, target: String) {
     std::process::Command::new("cargo")
-        .current_dir(environment.path.to_str().expect("Couldn't to_string environment path"))
+        .current_dir(
+            environment
+                .path
+                .to_str()
+                .expect("Couldn't to_string environment path"),
+        )
         .arg("build")
         .arg("--target")
         .arg(target)
-        .output().expect("failed to execute process");
+        .output()
+        .expect("failed to execute process");
 }
 
 pub fn validate(environment: &TestEnvironment, target: Option<String>) {
@@ -70,9 +79,21 @@ pub fn validate(environment: &TestEnvironment, target: Option<String>) {
     assert!(base_path.join("nested").exists());
 
     assert!(base_path.join("nested").join("doublenested").exists());
-    assert!(base_path.join("nested").join("doublenested").join("emptiest").exists());
-    assert!(base_path.join("nested").join("doublenested").join("seconddoublenested.txt").exists());
-    assert!(base_path.join("nested").join("doublenested").join("test3.txt").exists());
+    assert!(base_path
+        .join("nested")
+        .join("doublenested")
+        .join("emptiest")
+        .exists());
+    assert!(base_path
+        .join("nested")
+        .join("doublenested")
+        .join("seconddoublenested.txt")
+        .exists());
+    assert!(base_path
+        .join("nested")
+        .join("doublenested")
+        .join("test3.txt")
+        .exists());
 
     assert!(base_path.join("nested").join("emptier").exists());
     assert!(base_path.join("nested").join("secondnested.txt").exists());
@@ -87,8 +108,7 @@ pub fn validate(environment: &TestEnvironment, target: Option<String>) {
 pub fn custom_test_target() -> String {
     if cfg!(target_os = "windows") {
         "x86_64-pc-windows-msvc".to_string()
-    }
-    else {
+    } else {
         "x86_64-unknown-linux-gnu".to_string()
     }
 }
