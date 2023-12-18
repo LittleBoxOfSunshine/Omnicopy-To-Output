@@ -3,7 +3,7 @@
 # Omnicopy_to_output
 
 Provides a generalized implementation for a "post build copy" operation, which isn't well-supported in rust at time of
-writing. This crate is a fork of https://github.com/prenwyn/copy_to_output that implements more managed helpers +
+writing. This crate is inspired by https://github.com/prenwyn/copy_to_output, but implements more managed helpers +
 addresses some of the missing scenarios (again, at time of writing).
 
 If any scenarios are missing, please contribute!
