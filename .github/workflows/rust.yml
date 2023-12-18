@@ -30,6 +30,8 @@ jobs:
         run: cargo fmt --check
       - name: Clippy
         run: cargo clippy -- -D warnings
+      - name: Check
+        run: rustup show
       - name: Run tests
         run: cargo test --verbose
       - name: Docs
