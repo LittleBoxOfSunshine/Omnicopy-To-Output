@@ -14,7 +14,7 @@ pub fn fake_crate_in_tempdir() -> TestEnvironment {
     let mut environment = fake_workspace_in_tempdir();
 
     // In order for the fake crate to work as expected, kill the workspace file that owns it.
-    fs::remove_file(environment.path.join("../../Cargo.toml")).expect("Failed to delete workspace toml");
+    fs::remove_file(environment.path.join("Cargo.toml")).expect("Failed to delete workspace toml");
 
     // We just reused the workspace builder, fake crate is nested just append to the path.
     environment.path = environment.path.join("fake_crate");
@@ -31,7 +31,7 @@ pub fn fake_workspace_in_tempdir() -> TestEnvironment {
 
     copy_items(&[Path::new("./")], &dir.path(), &options).expect("Failed to copy");
 
-    let path = dir.path().join("../fake_workspace");
+    let path = dir.path().join("tests").join("fake_workspace");
 
     TestEnvironment {
         _handle: dir,
@@ -50,35 +50,45 @@ pub fn build_environment_with_target(environment: &TestEnvironment, target: Stri
     std::process::Command::new("cargo")
         .current_dir(environment.path.to_str().expect("Couldn't to_string environment path"))
         .arg("build")
-        .arg(format!("--target {target}"))
+        .arg("--target")
+        .arg(target)
         .output().expect("failed to execute process");
 }
 
-pub fn validate(environment: &TestEnvironment) {
-    assert!(environment.path.join("empty").exists());
-    assert!(environment.path.join("nested").exists());
+pub fn validate(environment: &TestEnvironment, target: Option<String>) {
+    let base_path = environment.path.join("target");
 
-    assert!(environment.path.join("nested/doublenested").exists());
-    assert!(environment.path.join("nested/doublenested/emptiest").exists());
-    assert!(environment.path.join("nested/doublenested/seconddoublenested.txt").exists());
-    assert!(environment.path.join("nested/doublenested/test3.txt").exists());
+    let base_path = if let Some(target) = target {
+        base_path.join(target)
+    } else {
+        base_path
+    };
 
-    assert!(environment.path.join("nested/emptier").exists());
-    assert!(environment.path.join("nested/secondnested.txt").exists());
-    assert!(environment.path.join("nested/test2.txt").exists());
+    let base_path = base_path.join("debug");
 
-    assert!(environment.path.join("second.txt").exists());
-    assert!(environment.path.join("test.dat").exists());
-    assert!(environment.path.join("test.txt").exists());
-}
+    assert!(base_path.join("empty").exists());
+    assert!(base_path.join("nested").exists());
 
-#[cfg(target_os = "linux")]
-pub fn custom_test_target() -> String {
-    "x86_64-unknown-linux-gnu".to_string()
+    assert!(base_path.join("nested").join("doublenested").exists());
+    assert!(base_path.join("nested").join("doublenested").join("emptiest").exists());
+    assert!(base_path.join("nested").join("doublenested").join("seconddoublenested.txt").exists());
+    assert!(base_path.join("nested").join("doublenested").join("test3.txt").exists());
+
+    assert!(base_path.join("nested").join("emptier").exists());
+    assert!(base_path.join("nested").join("secondnested.txt").exists());
+    assert!(base_path.join("nested").join("test2.txt").exists());
+
+    assert!(base_path.join("second.txt").exists());
+    assert!(base_path.join("test.dat").exists());
+    assert!(base_path.join("test.txt").exists());
 }
 
 // Just makes running the tests on a windows machine easier
-#[cfg(target_os = "windows")]
 pub fn custom_test_target() -> String {
-    "x86_64-pc-windows-msvc".to_string()
+    if cfg!(target_os = "windows") {
+        "x86_64-pc-windows-msvc".to_string()
+    }
+    else {
+        "x86_64-unknown-linux-gnu".to_string()
+    }
 }
