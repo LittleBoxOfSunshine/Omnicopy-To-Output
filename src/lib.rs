@@ -65,7 +65,6 @@ pub fn copy_to_output(path: &str) -> Result<()> {
 }
 
 pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()> {
-    let mut options = CopyOptions::new();
     let mut out_path = get_project_root()?;
     out_path.push("target");
 
@@ -78,6 +77,7 @@ pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()>
     out_path.push(build_type);
 
     // Overwrite existing files with same name
+    let mut options = CopyOptions::new();
     options.overwrite = true;
     options.copy_inside = true;
 
