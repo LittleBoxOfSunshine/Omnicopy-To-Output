@@ -1,11 +1,18 @@
 use omnicopy_to_output::copy_to_output;
+use std::fs;
+use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("TEST: {:?}", std::env::current_dir().unwrap());
-    println!("RES: {:?}", std::path::Path::new("./res").exists());
-    println!("RES: {:?}", std::path::Path::new("./res").join("nested").exists());
-    println!("RES: {:?}", std::path::Path::new("./res").join("empty").exists());
-    println!("RES: {:?}", std::path::Path::new("./res").join("test.dat").exists());
+    // Can't commit empty directories to git, dynamically create to ensure copying them works properly.
+    fs::create_dir_all(Path::new("res").join("empty")).unwrap();
+    fs::create_dir_all(Path::new("res").join("nested").join("emptier")).unwrap();
+    fs::create_dir_all(
+        Path::new("res")
+            .join("nested")
+            .join("doublenested")
+            .join("emptiest"),
+    )
+    .unwrap();
 
     // Bin-place resource files
     copy_to_output("res/nested").unwrap();
