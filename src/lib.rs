@@ -58,10 +58,7 @@ use std::env;
 use std::path::Path;
 
 pub fn copy_to_output(path: &str) -> Result<()> {
-    copy_to_output_for_build_type(
-        path,
-        &env::var("PROFILE")?,
-    )
+    copy_to_output_for_build_type(path, &env::var("PROFILE")?)
 }
 
 pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()> {
@@ -96,7 +93,8 @@ pub fn copy_to_output_by_path(path: &Path) -> Result<()> {
 }
 
 fn path_to_str(path: &Path) -> Result<&str> {
-    path.to_str().ok_or(anyhow!("Could not convert file path to string"))
+    path.to_str()
+        .ok_or(anyhow!("Could not convert file path to string"))
 }
 
 pub fn copy_to_output_by_path_for_build_type(path: &Path, build_type: &str) -> Result<()> {
