@@ -50,7 +50,7 @@
 
 extern crate core;
 
-use anyhow::*;
+use anyhow::{anyhow, Result};
 use fs_extra::copy_items;
 use fs_extra::dir::CopyOptions;
 use project_root::get_project_root;
@@ -68,15 +68,17 @@ pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()>
     let mut out_path = get_project_root()?;
     out_path.push("target");
 
-    // TODO: This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
+    // This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
+    // However, since the path follows predictable rules https://doc.rust-lang.org/cargo/guide/build-cache.html
+    // we can just check our parent path for the pattern target/{triple}/{profile}.
+    // If it is present, we know CompileKind::Target was used, otherwise CompileKind::Host was used.
     let triple = build_target::target_triple()?;
+
     if env::var_os("OUT_DIR")
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .contains(&triple)
-    {
-        out_path.push(triple)
+        .ok_or(anyhow!("Failed to read env:OUT_DIR"))?
+        .to_str().ok_or(anyhow!("Failed to convert env:OUT_DIR to str"))?
+        .contains(&triple) {
+        out_path.push(triple);
     }
 
     out_path.push(build_type);
