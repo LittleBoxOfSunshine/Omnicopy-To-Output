@@ -1,6 +1,8 @@
 use omnicopy_to_output::copy_to_output;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("{}", env::current_dir());
+
     // Bin-place resource files
     copy_to_output("res/nested").unwrap();
     copy_to_output("res/empty").unwrap();
