@@ -16,33 +16,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Run sccache-cache only on non-release runs
+        if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Set Rust caching env vars only on non-release runs
+        if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
       - name: Build
         run: cargo build --verbose
       - name: Format
         run: cargo fmt --check
       - name: Clippy
         run: cargo clippy -- -D warnings
+      - name: Check
+        run: rustup show
       - name: Run tests
         run: cargo test --verbose
       - name: Docs
         run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
-
-#  coverage:
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - uses: actions/checkout@v1
-#      - uses: actions-rs/toolchain@v1
-#        with:
-#          toolchain: nightly
-#          override: true
-#      - uses: actions-rs/cargo@v1
-#        with:
-#          command: test
-#          args: --all-features --no-fail-fast
-#        env:
-#          CARGO_INCREMENTAL: '0'
-#          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-#          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-#      - uses: actions-rs/grcov@v0.1

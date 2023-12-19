@@ -7,8 +7,8 @@
 //! <br>
 //!
 //! Provides a generalized implementation for a "post build copy" operation, which isn't
-//! well-supported in rust at time of writing. This crate is a fork of
-//! https://github.com/prenwyn/copy_to_output that implements more managed helpers + addresses some
+//! well-supported in rust at time of writing. This crate is inspired by
+//! <https://github.com/prenwyn/copy_to_output>, but implements more managed helpers + addresses some
 //! of the missing scenarios (again, at time of writing).
 //!
 //! As the name implies, the goal here is to provide coverage for all possible build scenarios as
@@ -18,9 +18,6 @@
 //! # Examples
 //! - Use in `build.rs`
 //!
-//!   ```
-//!
-//!   ```
 //!
 //! # Scenario Coverage
 //!
@@ -53,7 +50,7 @@
 
 extern crate core;
 
-use anyhow::*;
+use anyhow::{anyhow, Result};
 use fs_extra::copy_items;
 use fs_extra::dir::CopyOptions;
 use project_root::get_project_root;
@@ -61,36 +58,27 @@ use std::env;
 use std::path::Path;
 
 pub fn copy_to_output(path: &str) -> Result<()> {
-    copy_to_output_for_build_type(path, &env::var("PROFILE").expect("Could not load env:PROFILE"))
+    copy_to_output_for_build_type(path, &env::var("PROFILE")?)
 }
 
 pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()> {
-    let mut cargo_cache_command = format!("cargo:rerun-if-changed={}", path).to_owned();
-
-    if std::fs::metadata(path).expect("Could not pull metadata for path").is_dir() {
-        cargo_cache_command.push_str("/*");
-    }
-
-    // Re-runs script if any files changed
-    println!("{}", cargo_cache_command);
-    copy_to_output_no_cargo(path, build_type)
-}
-
-/// Advanced usage, leaves cargo commands up to you.
-pub fn copy_to_output_no_cargo(path: &str, build_type: &str) -> Result<()> {
-    let mut options = CopyOptions::new();
     let mut out_path = get_project_root()?;
     out_path.push("target");
 
-    // TODO: This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
-    let triple = build_target::target_triple().unwrap();
-    if env::var_os("OUT_DIR").unwrap().to_str().unwrap().contains(&triple) {
-        out_path.push(triple)
+    // This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
+    // However, since the path follows predictable rules https://doc.rust-lang.org/cargo/guide/build-cache.html
+    // we can just check our parent path for the pattern target/{triple}/{profile}.
+    // If it is present, we know CompileKind::Target was used, otherwise CompileKind::Host was used.
+    let triple = build_target::target_triple()?;
+
+    if env::var("OUT_DIR")?.contains(&format!("target{}{}", std::path::MAIN_SEPARATOR, triple)) {
+        out_path.push(triple);
     }
 
     out_path.push(build_type);
 
     // Overwrite existing files with same name
+    let mut options = CopyOptions::new();
     options.overwrite = true;
     options.copy_inside = true;
 
@@ -101,21 +89,14 @@ pub fn copy_to_output_no_cargo(path: &str, build_type: &str) -> Result<()> {
 
 /// Copies files to output
 pub fn copy_to_output_by_path(path: &Path) -> Result<()> {
-    copy_to_output(path_to_str(path))
+    copy_to_output(path_to_str(path)?)
 }
 
-fn path_to_str(path: &Path) -> &str {
+fn path_to_str(path: &Path) -> Result<&str> {
     path.to_str()
-        .expect("Could not convert file path to string")
+        .ok_or(anyhow!("Could not convert file path to string"))
 }
 
 pub fn copy_to_output_by_path_for_build_type(path: &Path, build_type: &str) -> Result<()> {
-    copy_to_output_for_build_type(path_to_str(path), build_type)
+    copy_to_output_for_build_type(path_to_str(path)?, build_type)
 }
-
-/// Advanced usage, leaves cargo commands up to you.
-pub fn copy_to_output_by_path_no_cargo(path: &Path, build_type: &str) -> Result<()> {
-    copy_to_output_no_cargo(path_to_str(path), build_type)
-}
-
-

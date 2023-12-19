@@ -4,4 +4,4 @@ version = "1.0.0"
 edition = "2021"
 
 [build-dependencies]
-build_copy_to_output = { path = "../Omnicopy-To-Outputbuild" }
+omnicopy_to_output = { path = "../../../" }
