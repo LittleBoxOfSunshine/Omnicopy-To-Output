@@ -72,7 +72,7 @@ pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()>
     out_path.push("target");
 
     // TODO: This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
-    let triple = build_target::target_triple().unwrap();
+    let triple = build_target::target_triple()?;
     if env::var_os("OUT_DIR")
         .unwrap()
         .to_str()
