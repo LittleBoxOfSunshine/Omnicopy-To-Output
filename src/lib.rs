@@ -60,7 +60,7 @@ use std::path::Path;
 pub fn copy_to_output(path: &str) -> Result<()> {
     copy_to_output_for_build_type(
         path,
-        &env::var("PROFILE").expect("Could not load env:PROFILE"),
+        &env::var("PROFILE")?,
     )
 }
 
@@ -74,10 +74,7 @@ pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()>
     // If it is present, we know CompileKind::Target was used, otherwise CompileKind::Host was used.
     let triple = build_target::target_triple()?;
 
-    if env::var_os("OUT_DIR")
-        .ok_or(anyhow!("Failed to read env:OUT_DIR"))?
-        .to_str().ok_or(anyhow!("Failed to convert env:OUT_DIR to str"))?
-        .contains(&triple) {
+    if env::var("OUT_DIR")?.contains(&triple) {
         out_path.push(triple);
     }
 
@@ -95,14 +92,13 @@ pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()>
 
 /// Copies files to output
 pub fn copy_to_output_by_path(path: &Path) -> Result<()> {
-    copy_to_output(path_to_str(path))
+    copy_to_output(path_to_str(path)?)
 }
 
-fn path_to_str(path: &Path) -> &str {
-    path.to_str()
-        .expect("Could not convert file path to string")
+fn path_to_str(path: &Path) -> Result<&str> {
+    path.to_str().ok_or(anyhow!("Could not convert file path to string"))
 }
 
 pub fn copy_to_output_by_path_for_build_type(path: &Path, build_type: &str) -> Result<()> {
-    copy_to_output_for_build_type(path_to_str(path), build_type)
+    copy_to_output_for_build_type(path_to_str(path)?, build_type)
 }
