@@ -71,7 +71,7 @@ pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()>
     // If it is present, we know CompileKind::Target was used, otherwise CompileKind::Host was used.
     let triple = build_target::target_triple()?;
 
-    if env::var("OUT_DIR")?.contains(&triple) {
+    if env::var("OUT_DIR")?.contains(&format!("target{}{}", std::path::MAIN_SEPARATOR, triple)) {
         out_path.push(triple);
     }
 
