@@ -37,7 +37,7 @@ pub fn fake_workspace_in_tempdir() -> TestEnvironment {
 }
 
 pub fn build_environment(environment: &TestEnvironment) {
-    std::process::Command::new("cargo")
+    let result = std::process::Command::new("cargo")
         .current_dir(
             environment
                 .path
@@ -47,10 +47,14 @@ pub fn build_environment(environment: &TestEnvironment) {
         .arg("build")
         .output()
         .expect("failed to execute process");
+
+    println!("{:?}", result.status);
+    println!("{:?}", std::str::from_utf8(&result.stdout).unwrap());
+    println!("{:?}", std::str::from_utf8(&result.stderr).unwrap());
 }
 
 pub fn build_environment_with_target(environment: &TestEnvironment, target: String) {
-    std::process::Command::new("cargo")
+    let result = std::process::Command::new("cargo")
         .current_dir(
             environment
                 .path
@@ -62,6 +66,10 @@ pub fn build_environment_with_target(environment: &TestEnvironment, target: Stri
         .arg(target)
         .output()
         .expect("failed to execute process");
+
+    println!("{:?}", result.status);
+    println!("{:?}", std::str::from_utf8(&result.stdout).unwrap());
+    println!("{:?}", std::str::from_utf8(&result.stderr).unwrap());
 }
 
 pub fn validate(environment: &TestEnvironment, target: Option<String>) {
