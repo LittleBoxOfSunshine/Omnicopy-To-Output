@@ -8,7 +8,7 @@
 //!
 //! Provides a generalized implementation for a "post build copy" operation, which isn't
 //! well-supported in rust at time of writing. This crate is inspired by
-//! https://github.com/prenwyn/copy_to_output, but implements more managed helpers + addresses some
+//! <https://github.com/prenwyn/copy_to_output>, but implements more managed helpers + addresses some
 //! of the missing scenarios (again, at time of writing).
 //!
 //! As the name implies, the goal here is to provide coverage for all possible build scenarios as
@@ -18,9 +18,6 @@
 //! # Examples
 //! - Use in `build.rs`
 //!
-//!   ```
-//!
-//!   ```
 //!
 //! # Scenario Coverage
 //!
