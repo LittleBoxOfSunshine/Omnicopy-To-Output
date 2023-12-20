@@ -73,15 +73,7 @@ pub fn build_environment_with_target(environment: &TestEnvironment, target: Stri
 }
 
 pub fn validate(environment: &TestEnvironment, target: Option<String>) {
-    let base_path = environment.path.join("target");
-
-    let base_path = if let Some(target) = target {
-        base_path.join(target)
-    } else {
-        base_path
-    };
-
-    let base_path = base_path.join("debug");
+    let base_path = get_target_path(environment, target);
 
     assert!(base_path.join("empty").exists());
     assert!(base_path.join("nested").exists());
@@ -110,6 +102,18 @@ pub fn validate(environment: &TestEnvironment, target: Option<String>) {
     assert!(base_path.join("second.txt").exists());
     assert!(base_path.join("test.dat").exists());
     assert!(base_path.join("test.txt").exists());
+}
+
+pub fn get_target_path(environment: &TestEnvironment, target: Option<String>) -> PathBuf {
+    let base_path = environment.path.join("target");
+
+    let base_path = if let Some(target) = target {
+        base_path.join(target)
+    } else {
+        base_path
+    };
+
+    base_path.join("debug")
 }
 
 // Just makes running the tests on a windows machine easier
