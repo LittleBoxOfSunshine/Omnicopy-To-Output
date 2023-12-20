@@ -1,4 +1,4 @@
-use omnicopy_to_output::copy_to_output;
+use omnicopy_to_output::{copy_to_output, copy_to_output_for_build_type};
 use std::fs;
 use std::path::Path;
 
