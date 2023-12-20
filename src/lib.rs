@@ -60,8 +60,6 @@ use project_root::get_project_root;
 use std::env;
 use std::path::Path;
 
-pub use cargo_emit::rerun_if_changed;
-
 pub fn copy_to_output(path: &str) -> Result<()> {
     copy_to_output_for_build_type(path, &env::var("PROFILE")?)
 }
@@ -106,9 +104,18 @@ pub fn copy_to_output_by_path_for_build_type(path: &Path, build_type: &str) -> R
     copy_to_output_for_build_type(path_to_str(path)?, build_type)
 }
 
-pub fn cargo_rerun_if_project_changed() -> Result<()> {
-    cargo_emit::rerun_if_changed!(get_project_root()?
-        .to_str()
-        .ok_or(anyhow!("Could not convert project root path to string"))?,);
+pub fn cargo_rerun_if_changed(path: &str) {
+    println!("cargo:rerun-if-changed={}", path)
+}
+
+pub fn cargo_rerun_if_path_changed(path: &Path) -> Result<()> {
+    cargo_rerun_if_changed(
+        path.to_str()
+            .ok_or(anyhow!("Could not convert project root path to string"))?,
+    );
     Ok(())
+}
+
+pub fn cargo_rerun_if_project_changed() -> Result<()> {
+    cargo_rerun_if_path_changed(&get_project_root()?)
 }
