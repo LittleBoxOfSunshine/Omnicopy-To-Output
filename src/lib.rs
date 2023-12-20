@@ -18,6 +18,9 @@
 //! # Examples
 //! - Use in `build.rs`
 //!
+//!   ```rust
+//!
+//!   ```
 //!
 //! # Scenario Coverage
 //!
@@ -44,7 +47,7 @@
 //! 2. From the root, the next path element is always `/target`
 //! 3. Next, is either `/{profile}` if no specific target selector was provided or `/{target}/{profile}` if one is provided
 //!     a. Get `{profile}` from `env:PROFILE`
-//!     b. Get `{target}` from [build_target::target_triple](https://docs.rs/build-target/0.4.0/build_target/fn.target_triple.html)
+//!     b. Get `{target}` from [build_target::target_triple](https://docs.rs/build-target/latest/build_target/fn.target_triple.html)
 //!     c. Determine which scheme is in use by testing if `env:OUT_DIR` contains `target/{target}`
 //!
 
@@ -56,6 +59,8 @@ use fs_extra::dir::CopyOptions;
 use project_root::get_project_root;
 use std::env;
 use std::path::Path;
+
+pub use cargo_emit::rerun_if_changed;
 
 pub fn copy_to_output(path: &str) -> Result<()> {
     copy_to_output_for_build_type(path, &env::var("PROFILE")?)
@@ -94,9 +99,16 @@ pub fn copy_to_output_by_path(path: &Path) -> Result<()> {
 
 fn path_to_str(path: &Path) -> Result<&str> {
     path.to_str()
-        .ok_or(anyhow!("Could not convert file path to string"))
+        .ok_or(anyhow!("Could not convert path to string"))
 }
 
 pub fn copy_to_output_by_path_for_build_type(path: &Path, build_type: &str) -> Result<()> {
     copy_to_output_for_build_type(path_to_str(path)?, build_type)
+}
+
+pub fn cargo_rerun_if_project_changed() -> Result<()> {
+    cargo_emit::rerun_if_changed!(get_project_root()?
+        .to_str()
+        .ok_or(anyhow!("Could not convert project root path to string"))?,);
+    Ok(())
 }
