@@ -51,14 +51,13 @@
 //!   Large resources may not exist in your project. We can still copy those to output, but cargo will
 //!   not detect changes and invalidate the cache. Emitting [cargo:rerun-if-changed](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rerun-if-changed)
 //!   instructions will inform cargo these files exist, but then will change cache invalidation to _only_
-//!   what you specify. We can use the helper [`cargo_rerun_if_project_changed`] to restore the default
-//!   behavior along with the helper [`cargo_rerun_if_changed`] to include the out of project resources.
+//!   what you specify. Note, as soon as you do this in one place the default "anything in package"
+//!   rules no longer apply. This is something you ideally are configuring anyway though.
 //!
 //!   ```no_run
-//!   use omnicopy_to_output::{copy_to_output, cargo_rerun_if_project_changed, cargo_rerun_if_changed};
+//!   use omnicopy_to_output::{copy_to_output, cargo_rerun_if_changed};
 //!
-//!   fn main() {
-//!       cargo_rerun_if_project_changed().expect("Could not determine project root");
+//!   fn main() {//!
 //!       let path_to_large_resources = "/path/to/large/resources";
 //!       cargo_rerun_if_changed(path_to_large_resources);
 //!       copy_to_output(path_to_large_resources).expect("Could not copy");
@@ -70,7 +69,7 @@
 //! cache instructions.
 //!
 //! We support accommodating:
-//!     - Build types (e.g retail vs test; integration tests see files)
+//!     - Build types (e.g. retail vs test; integration tests see files)
 //!     - Target
 //!     - Cross compilation (special case target)
 //!     - Workspace or single crate build
@@ -171,12 +170,4 @@ pub fn cargo_rerun_if_path_changed(path: &Path) -> Result<()> {
             .ok_or(anyhow!("Could not convert project root path to string"))?,
     );
     Ok(())
-}
-
-/// Restores the default cargo cache invalidation, which is to monitor the project directory. If you emit
-/// [cargo:rerun-if-changed](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rerun-if-changed)
-/// it will only monitor what you provide. In this context, if you're just looking to also monitor external
-/// files in additional to your project (including source code) you can use this to achieve that goal.
-pub fn cargo_rerun_if_project_changed() -> Result<()> {
-    cargo_rerun_if_path_changed(&get_project_root()?)
 }
