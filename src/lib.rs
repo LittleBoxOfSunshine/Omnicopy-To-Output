@@ -55,7 +55,7 @@
 //!   rules no longer apply. This is something you ideally are configuring anyway though.
 //!
 //!   ```no_run
-//!   use omnicopy_to_output::{copy_to_output, cargo_rerun_if_project_changed, cargo_rerun_if_changed};
+//!   use omnicopy_to_output::{copy_to_output, cargo_rerun_if_changed};
 //!
 //!   fn main() {//!
 //!       let path_to_large_resources = "/path/to/large/resources";
