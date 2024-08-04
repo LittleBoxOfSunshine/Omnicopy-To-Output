@@ -70,7 +70,7 @@
 //!
 //! We support accommodating:
 //!     - Build types (e.g. retail vs test; integration tests see files)
-//!     - [`cargo::CompileKind`] https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
+//!     - [`cargo::CompileKind`](https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html)
 //!     - Target
 //!     - Cross compilation (special case target)
 //!     - Workspace or single crate build
