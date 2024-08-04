@@ -118,13 +118,13 @@ pub fn copy_to_output(path: &str) -> Result<()> {
 pub fn copy_to_output_for_profile(path: &str, profile: &str) -> Result<()> {
     // `CARGO_TARGET_DIR` is only set for CompileKind::Target. If set, respect it else use default.
     let mut out_path = if let Ok(custom_target_dir) = env::var("CARGO_TARGET_DIR") {
-        let mut path = PathBuf::new();
-        path.push(custom_target_dir);
-        path
+        let mut out_path = PathBuf::new();
+        out_path.push(custom_target_dir);
+        out_path
     } else {
-        let mut path = get_project_root()?;
-        path.push("target");
-        path
+        let mut out_path = get_project_root()?;
+        out_path.push("target");
+        out_path
     };
 
     // This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
