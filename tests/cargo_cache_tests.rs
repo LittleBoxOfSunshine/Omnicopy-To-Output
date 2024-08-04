@@ -33,7 +33,7 @@ fn edit_build_validate_updated(environment: TestEnvironment, test_file: PathBuf)
 }
 
 fn create_and_build() -> TestEnvironment {
-    let environment = fake_crate_in_tempdir();
+    let environment = fake_crate_in_tempdir(false);
     build_environment(&environment);
     validate(&environment, None);
 

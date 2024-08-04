@@ -36,12 +36,12 @@
 //!   build is run. A full example would have conditional logic.
 //!
 //!   ```no_run
-//!   use omnicopy_to_output::copy_to_output_for_build_type;
+//!   use omnicopy_to_output::copy_to_output_for_profile;
 //!
 //!   fn main() {
 //!       // Manually specify the profile (i.e. env:PROFILE)
-//!       copy_to_output_for_build_type("res/foo.dll", "release").expect("Could not copy");
-//!       copy_to_output_for_build_type("res/food.dll", "debug").expect("Could not copy");
+//!       copy_to_output_for_profile("res/foo.dll", "release").expect("Could not copy");
+//!       copy_to_output_for_profile("res/food.dll", "debug").expect("Could not copy");
 //!       
 //!   }
 //!   ```
@@ -57,7 +57,7 @@
 //!   ```no_run
 //!   use omnicopy_to_output::{copy_to_output, cargo_rerun_if_changed};
 //!
-//!   fn main() {//!
+//!   fn main() {
 //!       let path_to_large_resources = "/path/to/large/resources";
 //!       cargo_rerun_if_changed(path_to_large_resources);
 //!       copy_to_output(path_to_large_resources).expect("Could not copy");
@@ -70,6 +70,7 @@
 //!
 //! We support accommodating:
 //!     - Build types (e.g. retail vs test; integration tests see files)
+//!     - [`cargo::CompileKind`] https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
 //!     - Target
 //!     - Cross compilation (special case target)
 //!     - Workspace or single crate build
@@ -77,19 +78,22 @@
 //! # Considerations
 //!
 //! This is in lieu of a better solution from cargo directly. In particular, it's worth noting that
-//! [build scripts should not modify any files outside of the OUT_DIR directory](https://doc.rust-lang.org/cargo/reference/build-scripts.html).
+//! [build scripts should not modify any files outside the OUT_DIR directory](https://doc.rust-lang.org/cargo/reference/build-scripts.html).
 //! We're not modifying, but it's still not necessarily in the "spirit" of the instructions.
 //!
 //! # How it Works
 //!
 //! To locate the target directory, we must know the project root and the target.
 //!
-//! 1. Project root (to support workspaces) is determined using [project_root](https://docs.rs/project-root/latest/project_root/)
-//! 2. From the root, the next path element is always `/target`
-//! 3. Next is either `/{profile}` if no specific target selector was provided or `/{target}/{profile}` if one is provided
-//!     a. Get `{profile}` from `env:PROFILE`
-//!     b. Get `{target}` from [build_target::target_triple](https://docs.rs/build-target/latest/build_target/fn.target_triple.html)
-//!     c. Determine which scheme is in use by testing if `env:OUT_DIR` contains `target/{target}`
+//! 1. Determine if the output directory was overridden with `env:CARGO_TARGET_DIR`
+//!     - If yes, use that path directly
+//!     - If not, the path will default to `{workspace_root}/target` which we determine using [project_root](https://docs.rs/project-root/latest/project_root/).
+//! 2. Determine which [`CompileKind`](https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html) is used. Cargo doesn't expose this directly.
+//!     This crate is intended to be used in build scripts. Cargo provides `env:OUT_DIR` for build scripts. This isn't where we want to place these assets,
+//!     but it does allow us to infer the `CompileKind`. If the triple + profile (`{target}/{profile}`) appears in the path, then `CompileKind::Target` was used.
+//!     Otherwise, `CompileKind::Host` was used. Profile comes from `env:Profile` and target from [build_target::target_triple](https://docs.rs/build-target/latest/build_target/fn.target_triple.html).
+//!     - For `CompileKind::Host` we concatenate `/{profile}`
+//!     - For `CompileKind::Target` we concatenate `/{target}/{profile}`
 //!
 
 extern crate core;
@@ -99,33 +103,51 @@ use fs_extra::copy_items;
 use fs_extra::dir::CopyOptions;
 use project_root::get_project_root;
 use std::env;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Copies files to output recursively
 pub fn copy_to_output(path: &str) -> Result<()> {
-    copy_to_output_for_build_type(path, &env::var("PROFILE")?)
+    copy_to_output_for_profile(path, &env::var("PROFILE")?)
 }
 
 /// Copies files to output recursively
 ///
 /// # Arguments
 ///
-/// * `build_type` - Manually specify the profile (i.e. env:PROFILE). Default is `debug` or `release`.
-pub fn copy_to_output_for_build_type(path: &str, build_type: &str) -> Result<()> {
-    let mut out_path = get_project_root()?;
-    out_path.push("target");
+/// * `profile` - Manually specify the profile (i.e. env:PROFILE). Default is `debug` or `release`.
+pub fn copy_to_output_for_profile(path: &str, profile: &str) -> Result<()> {
+    // `CARGO_TARGET_DIR` is only set for CompileKind::Target. If set, respect it else use default.
+    let mut out_path = if let Ok(custom_target_dir) = env::var("CARGO_TARGET_DIR") {
+        let mut path = PathBuf::new();
+        path.push(custom_target_dir);
+        path
+    } else {
+        let mut path = get_project_root()?;
+        path.push("target");
+        path
+    };
 
     // This is a hack, ideally we would plug into https://docs.rs/cargo/latest/cargo/core/compiler/enum.CompileKind.html
     // However, since the path follows predictable rules https://doc.rust-lang.org/cargo/guide/build-cache.html
-    // we can just check our parent path for the pattern target/{triple}/{profile}.
+    // we can just check our parent path for the pattern {target|env:CARGO_TARGET_DIR}/{triple}/{profile}.
     // If it is present, we know CompileKind::Target was used, otherwise CompileKind::Host was used.
     let triple = build_target::target_triple()?;
+    let compile_kind_is_target = env::var("OUT_DIR")
+        .expect(
+            "env `OUT_DIR` not set by cargo. Are you running this function inside a build script?",
+        )
+        .contains(&format!(
+            "{}{}{}",
+            triple,
+            std::path::MAIN_SEPARATOR,
+            profile
+        ));
 
-    if env::var("OUT_DIR")?.contains(&format!("target{}{}", std::path::MAIN_SEPARATOR, triple)) {
+    if compile_kind_is_target {
         out_path.push(triple);
     }
 
-    out_path.push(build_type);
+    out_path.push(profile);
 
     // Overwrite existing files with same name
     let mut options = CopyOptions::new();
@@ -151,9 +173,9 @@ fn path_to_str(path: &Path) -> Result<&str> {
 ///
 /// # Arguments
 ///
-/// * `build_type` - Manually specify the profile (i.e. env:PROFILE). Default is `debug` or `release`.
-pub fn copy_to_output_by_path_for_build_type(path: &Path, build_type: &str) -> Result<()> {
-    copy_to_output_for_build_type(path_to_str(path)?, build_type)
+/// * `profile` - Manually specify the profile (i.e. env:PROFILE). Default is `debug` or `release`.
+pub fn copy_to_output_by_path_for_profile(path: &Path, profile: &str) -> Result<()> {
+    copy_to_output_for_profile(path_to_str(path)?, profile)
 }
 
 /// Emits [cargo:rerun-if-changed](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rerun-if-changed).

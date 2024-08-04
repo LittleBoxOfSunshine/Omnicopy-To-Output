@@ -7,28 +7,60 @@ mod common;
 
 #[test]
 fn build_crate() {
-    let environment = fake_crate_in_tempdir();
+    let environment = fake_crate_in_tempdir(false);
     build_environment(&environment);
     validate(&environment, None);
 }
 
 #[test]
 fn build_crate_target_specified() {
-    let environment = fake_crate_in_tempdir();
+    let environment = fake_crate_in_tempdir(false);
     build_environment_with_target(&environment, custom_test_target());
     validate(&environment, Some(custom_test_target()));
 }
 
 #[test]
 fn build_workspace() {
-    let environment = fake_workspace_in_tempdir();
+    let environment = fake_workspace_in_tempdir(false);
     build_environment(&environment);
     validate(&environment, None);
 }
 
 #[test]
 fn build_workspace_target_specified() {
-    let environment = fake_workspace_in_tempdir();
+    let environment = fake_workspace_in_tempdir(false);
     build_environment_with_target(&environment, custom_test_target());
     validate(&environment, Some(custom_test_target()));
+}
+
+mod custom_out_dir {
+    use super::*;
+
+    #[test]
+    fn build_crate() {
+        let environment = fake_crate_in_tempdir(true);
+        build_environment(&environment);
+        validate(&environment, None);
+    }
+
+    #[test]
+    fn build_crate_target_specified() {
+        let environment = fake_crate_in_tempdir(true);
+        build_environment_with_target(&environment, custom_test_target());
+        validate(&environment, Some(custom_test_target()));
+    }
+
+    #[test]
+    fn build_workspace() {
+        let environment = fake_workspace_in_tempdir(true);
+        build_environment(&environment);
+        validate(&environment, None);
+    }
+
+    #[test]
+    fn build_workspace_target_specified() {
+        let environment = fake_workspace_in_tempdir(true);
+        build_environment_with_target(&environment, custom_test_target());
+        validate(&environment, Some(custom_test_target()));
+    }
 }

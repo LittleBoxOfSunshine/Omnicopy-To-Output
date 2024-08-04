@@ -2,16 +2,19 @@ use fs_extra::copy_items;
 use fs_extra::dir::CopyOptions;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
 use tempfile::TempDir;
 
 pub struct TestEnvironment {
     _handle: TempDir,
     pub path: PathBuf,
+    _out_handle: Option<TempDir>,
+    pub out_path: Option<PathBuf>,
 }
 
 // Creates a copy of the fake crate in a temp dir and returns handle
-pub fn fake_crate_in_tempdir() -> TestEnvironment {
-    let mut environment = fake_workspace_in_tempdir();
+pub fn fake_crate_in_tempdir(custom_out_dir: bool) -> TestEnvironment {
+    let mut environment = fake_workspace_in_tempdir(custom_out_dir);
 
     // In order for the fake crate to work as expected, kill the workspace file that owns it.
     fs::remove_file(environment.path.join("Cargo.toml")).expect("Failed to delete workspace toml");
@@ -22,7 +25,7 @@ pub fn fake_crate_in_tempdir() -> TestEnvironment {
     environment
 }
 
-pub fn fake_workspace_in_tempdir() -> TestEnvironment {
+pub fn fake_workspace_in_tempdir(custom_out_dir: bool) -> TestEnvironment {
     let dir = TempDir::new().expect("Failed to create temp dir");
 
     let mut options = CopyOptions::new();
@@ -33,43 +36,62 @@ pub fn fake_workspace_in_tempdir() -> TestEnvironment {
 
     let path = dir.path().join("tests").join("fake_workspace");
 
-    TestEnvironment { _handle: dir, path }
+    let mut environment = TestEnvironment {
+        _handle: dir,
+        path,
+        _out_handle: None,
+        out_path: None,
+    };
+
+    if custom_out_dir {
+        let out_dir = TempDir::new().expect("Failed to create temp dir");
+        environment.out_path = Some(PathBuf::from(out_dir.path()));
+        environment._out_handle = Some(out_dir);
+    }
+
+    environment
 }
 
 pub fn build_environment(environment: &TestEnvironment) {
-    let result = std::process::Command::new("cargo")
-        .current_dir(
-            environment
-                .path
-                .to_str()
-                .expect("Couldn't to_string environment path"),
-        )
-        .arg("build")
+    let result = base_cargo_command(environment)
         .output()
         .expect("failed to execute process");
 
-    println!("{:?}", result.status);
-    println!("{:?}", std::str::from_utf8(&result.stdout).unwrap());
-    println!("{:?}", std::str::from_utf8(&result.stderr).unwrap());
+    dump_result(result);
 }
 
-pub fn build_environment_with_target(environment: &TestEnvironment, target: String) {
-    let result = std::process::Command::new("cargo")
+fn base_cargo_command(environment: &TestEnvironment) -> Command {
+    let mut command = Command::new("cargo");
+    command
         .current_dir(
             environment
                 .path
                 .to_str()
                 .expect("Couldn't to_string environment path"),
         )
-        .arg("build")
+        .arg("build");
+
+    if let Some(path) = &environment.out_path {
+        command.env("CARGO_TARGET_DIR", path);
+    }
+
+    command
+}
+
+fn dump_result(output: Output) {
+    println!("{:?}", output.status);
+    println!("{}", std::str::from_utf8(&output.stdout).unwrap());
+    println!("{}", std::str::from_utf8(&output.stderr).unwrap());
+}
+
+pub fn build_environment_with_target(environment: &TestEnvironment, target: String) {
+    let result = base_cargo_command(environment)
         .arg("--target")
         .arg(target)
         .output()
         .expect("failed to execute process");
 
-    println!("{:?}", result.status);
-    println!("{:?}", std::str::from_utf8(&result.stdout).unwrap());
-    println!("{:?}", std::str::from_utf8(&result.stderr).unwrap());
+    dump_result(result);
 }
 
 pub fn validate(environment: &TestEnvironment, target: Option<String>) {
@@ -105,7 +127,11 @@ pub fn validate(environment: &TestEnvironment, target: Option<String>) {
 }
 
 pub fn get_target_path(environment: &TestEnvironment, target: Option<String>) -> PathBuf {
-    let base_path = environment.path.join("target");
+    let base_path = if let Some(path) = &environment.out_path {
+        PathBuf::from(path)
+    } else {
+        environment.path.join("target")
+    };
 
     let base_path = if let Some(target) = target {
         base_path.join(target)
@@ -116,10 +142,12 @@ pub fn get_target_path(environment: &TestEnvironment, target: Option<String>) ->
     base_path.join("debug")
 }
 
-// Just makes running the tests on a windows machine easier
+// Just makes running the tests on a windows or apple silicon mac machine easier
 pub fn custom_test_target() -> String {
     if cfg!(target_os = "windows") {
         "x86_64-pc-windows-msvc".to_string()
+    } else if cfg!(target_os = "macos") {
+        "aarch64-apple-darwin".to_string()
     } else {
         "x86_64-unknown-linux-gnu".to_string()
     }
