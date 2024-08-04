@@ -1,7 +1,7 @@
 [package]
 name = "omnicopy_to_output"
 description = "Generalized post build copy to place files in output directory"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Chris Henk <Chris.Henk@unobtainium.software>"]
 license = "MIT OR Apache-2.0"
